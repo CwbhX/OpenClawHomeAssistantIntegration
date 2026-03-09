@@ -2,6 +2,14 @@
 
 This file defines the tool contracts expected by the updated Home Assistant integration.
 
+## Invocation Model
+
+- The `ha_*` tools are native Home Assistant integration tools.
+- They are intended to be used through the normal OpenClaw conversation or message flow.
+- They are not gateway `/tools/invoke` tools.
+- Do not call them through `openclaw.invoke_tool`.
+- A 404 from `/tools/invoke` for a native `ha_*` tool does not mean the integration-native tool path is broken.
+
 ## `ha_inventory_query`
 
 ### Actions
@@ -119,3 +127,11 @@ Tool results include structured metadata such as:
 - `result_preview`
 
 Base decisions and user-facing responses on these tool results rather than assuming a change succeeded.
+
+## Recommended Prompting
+
+When the model is hesitant or confused, use instructions like:
+
+- "Use the Home Assistant integration native tools only."
+- "Do not use `openclaw.invoke_tool` for this."
+- "Inspect first, then create or update, then verify."
