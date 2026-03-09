@@ -1,9 +1,6 @@
 # OpenClaw Integration for Home Assistant
 
-<img width="1583" height="563" alt="image" src="https://github.com/user-attachments/assets/b4468dd4-2028-4620-be82-1c6876738276" />
-<img width="1536" height="542" alt="ChatGPT Image Feb 25, 2026, 11_37_02 PM" src="https://github.com/user-attachments/assets/ea662d87-5414-4c01-ac48-cb8f731a4988" />
-
-_If you want to install OpenClaw as  Add-On/App directly on your Home Assistant instance take a look here:_ https://github.com/CwbhX/OpenClawHomeAssistant
+_If you want to install OpenClaw as an Add-On/App directly on your Home Assistant instance, take a look here:_ https://github.com/CwbhX/OpenClawHomeAssistant
 
 
 OpenClaw is a Home Assistant custom integration that connects your HA instance to the OpenClaw assistant backend and provides:
@@ -37,6 +34,19 @@ OpenClaw is a Home Assistant custom integration that connects your HA instance t
   - `openclaw_tool_invoked`
 - **Sensors / status entities** for model and connection state
   - Includes tool telemetry sensors (`Last Tool`, `Last Tool Status`, `Last Tool Duration`, `Last Tool Invoked`)
+
+## Why this fork exists
+
+The upstream OpenClaw + Home Assistant integration pattern is usually great for chatting and automation triggers, but it did not provide a reliable, native path for OpenClaw to create and update Home Assistant artifacts (automations, scenes, scripts, blueprints) directly from conversation.
+
+This fork exists to close that gap with a native tool layer that is owned by the Home Assistant integration itself. The goal is:
+
+- Let OpenClaw discover what HA resources are available.
+- Let it create/update/replace/delete automations, scenes, scripts, and blueprints through a safe, integration-scoped path.
+- Keep Home Assistant as the source of truth for the writable resources it manages, with proper metadata and editability tracking.
+- Reduce manual YAML editing by enabling true “assistant-driven automation authoring.”
+
+The practical result is an assistant workflow where you can ask OpenClaw to handle routine Home Assistant changes directly rather than copy/paste snippets yourself.
 
 ---
 
@@ -134,6 +144,27 @@ You can connect to **any reachable OpenClaw gateway** — whether it's the HA ad
 
 2. Restart Home Assistant
 3. Add **OpenClaw** from **Settings → Devices & Services**
+
+---
+
+## OpenClaw-side skill setup
+
+The integration exposes Home Assistant-native capabilities to OpenClaw after HA connection succeeds. To make OpenClaw use that capability reliably as a first-class skill, configure both sides together:
+
+1. In Home Assistant, open **Settings → Devices & Services → OpenClaw → Configure**.
+2. Turn on **Enable native Home Assistant management tools**.
+3. Set **Agent ID** (for text) and **Voice Agent ID** (for voice) to the OpenClaw agent IDs you use.
+4. In OpenClaw, choose the matching assistant/agent and add `openclaw_skill/OPENCLAW_SKILL.md` as the home assistant/HA system instruction.
+   - If your OpenClaw deployment supports custom skills, keep this as the first/highest-priority skill for HA workflows.
+5. Verify the wiring:
+   - Send a test in OpenClaw: `What Home Assistant tools are available?`
+   - Ask for a simple read action and confirm the response references Home Assistant state.
+   - Enable a small non-breaking change workflow (for example, add an automation description) and verify it appears in Home Assistant.
+   - Confirm `openclaw_tool_invoked` events include `resource_type` and `target_id` for the action.
+
+Notes:
+- You do not need to install an extra Home Assistant package for the skill itself.
+- If you only use this for chat, the integration still works with the HA tool integration disabled; enabling the skill path adds reliable Home Assistant authoring workflows.
 
 ---
 
@@ -407,10 +438,6 @@ action:
 - Root `www/openclaw-chat-card.js` is a loader shim that imports the packaged card script.
 
 ---
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=CwbhX/OpenClawHomeAssistantIntegration&type=date&legend=top-left)](https://www.star-history.com/#CwbhX/OpenClawHomeAssistantIntegration&type=date&legend=top-left)
 
 ## License
 
