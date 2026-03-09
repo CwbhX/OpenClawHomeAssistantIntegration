@@ -1,10 +1,9 @@
 # OpenClaw Integration for Home Assistant
 
-## [Join our Discord Server!](https://discord.gg/xeHeKu9jYp)
 <img width="1583" height="563" alt="image" src="https://github.com/user-attachments/assets/b4468dd4-2028-4620-be82-1c6876738276" />
 <img width="1536" height="542" alt="ChatGPT Image Feb 25, 2026, 11_37_02 PM" src="https://github.com/user-attachments/assets/ea662d87-5414-4c01-ac48-cb8f731a4988" />
 
-_If you want to install OpenClaw as  Add-On/App directly on your Home Assistant instance take a look here:_ https://github.com/techartdev/OpenClawHomeAssistant
+_If you want to install OpenClaw as  Add-On/App directly on your Home Assistant instance take a look here:_ https://github.com/CwbhX/OpenClawHomeAssistant
 
 
 OpenClaw is a Home Assistant custom integration that connects your HA instance to the OpenClaw assistant backend and provides:
@@ -45,7 +44,7 @@ OpenClaw is a Home Assistant custom integration that connects your HA instance t
 
 - Home Assistant Core `2025.1.0+` (declared minimum)
 - An **OpenClaw gateway** with `enable_openai_api` enabled — either:
-  - The [OpenClaw Assistant addon](https://github.com/techartdev/OpenClawHomeAssistant) running on the same HA instance (auto-discovery supported), **or**
+- The [OpenClaw Assistant addon](https://github.com/CwbhX/OpenClawHomeAssistant) running on the same HA instance (auto-discovery supported), **or**
   - Any standalone [OpenClaw](https://github.com/openclaw/openclaw) installation reachable over the network (manual config)
 - Supervisor is optional (used only for addon auto-discovery)
 
@@ -116,7 +115,7 @@ You can connect to **any reachable OpenClaw gateway** — whether it's the HA ad
 1. Open **HACS → Integrations**
 2. Click the **3 dots (⋮)** menu in the top-right
 3. Select **Custom repositories**
-4. Add repository URL: `https://github.com/techartdev/OpenClawHomeAssistantIntegration`
+4. Add repository URL: `https://github.com/CwbhX/OpenClawHomeAssistantIntegration`
 5. Category: **Integration**
 6. Click **Add**
 7. Go back to **Explore & Download Repositories**
@@ -411,13 +410,8 @@ action:
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=techartdev/OpenClawHomeAssistantIntegration&type=date&legend=top-left)](https://www.star-history.com/#techartdev/OpenClawHomeAssistantIntegration&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=CwbhX/OpenClawHomeAssistantIntegration&type=date&legend=top-left)](https://www.star-history.com/#CwbhX/OpenClawHomeAssistantIntegration&type=date&legend=top-left)
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Support / Donations
-
-If you find this useful and you want to bring me a coffee to make more nice stuff, or support the project, use the link below:
-- https://revolut.me/vanyo6dhw

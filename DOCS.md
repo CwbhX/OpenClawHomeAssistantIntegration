@@ -41,7 +41,7 @@ If this endpoint is disabled, chat and connection checks can fail even when the 
 ## Option A — HACS (recommended)
 1. Open **HACS → Integrations**.
 2. Use the **⋮ menu** (top-right) → **Custom repositories**.
-3. Add repository URL: `https://github.com/techartdev/OpenClawHomeAssistantIntegration`
+3. Add repository URL: `https://github.com/CwbhX/OpenClawHomeAssistantIntegration`
 4. Category: **Integration**.
 5. Install **OpenClaw**.
 6. Restart Home Assistant.
