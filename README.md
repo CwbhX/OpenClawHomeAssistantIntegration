@@ -12,6 +12,7 @@ OpenClaw is a Home Assistant custom integration that connects your HA instance t
 - A native conversation agent for Assist
 - A Lovelace chat card with session history
 - Service and event APIs for automations
+- Native Home Assistant discovery and authoring tools for OpenClaw
 - Optional voice mode in the card
 
 ---
@@ -28,6 +29,10 @@ OpenClaw is a Home Assistant custom integration that connects your HA instance t
   - `openclaw.send_message`
   - `openclaw.clear_history`
   - `openclaw.invoke_tool`
+- **Native HA management tools** when enabled
+  - inventory queries for entities, automations, scenes, scripts, and blueprints
+  - create/update/replace/delete for automations, scenes, scripts, and blueprints
+  - enable/disable for automations
 - **Event**
   - `openclaw_message_received`
   - `openclaw_tool_invoked`
@@ -187,6 +192,17 @@ Open **Settings → Devices & Services → OpenClaw → Configure**.
 
 When enabled, OpenClaw tool-call responses can execute Home Assistant services.
 
+- **Enable native Home Assistant management tools**
+
+When enabled, the integration injects a capability manifest into the prompt and exposes native tools for:
+- inventory and capability discovery
+- automations
+- scenes
+- scripts
+- blueprints
+
+These native tools coexist with any separate generic Home Assistant skill, but provide a richer integration-owned authoring surface with editability and source metadata.
+
 ### Voice options
 
 - **Wake word enabled**
@@ -227,6 +243,8 @@ If voice is unreliable in Brave, use Chrome/Edge for card voice input or continu
 
 Send a message to OpenClaw.
 
+When native Home Assistant management tools are enabled, OpenClaw can inspect and manage supported Home Assistant resources during the conversation through integration-owned tool calls.
+
 Fields:
 
 - `message` (required)
@@ -261,6 +279,8 @@ data:
 ### `openclaw.invoke_tool`
 
 Invoke a single OpenClaw Gateway tool directly.
+
+This service targets gateway tools only. Native Home Assistant authoring and inventory operations happen through the send-message and Assist conversation paths.
 
 Fields:
 
@@ -316,6 +336,9 @@ Fired when `openclaw.invoke_tool` completes.
 Event data includes:
 
 - `tool`
+- `action`
+- `resource_type`
+- `target_id`
 - `ok`
 - `result`
 - `error`
@@ -398,4 +421,3 @@ MIT. See [LICENSE](LICENSE).
 
 If you find this useful and you want to bring me a coffee to make more nice stuff, or support the project, use the link below:
 - https://revolut.me/vanyo6dhw
-

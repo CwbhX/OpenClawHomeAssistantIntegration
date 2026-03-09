@@ -38,8 +38,10 @@ from .const import (
     ATTR_RESULT,
     ATTR_ERROR,
     ATTR_DURATION_MS,
+    ATTR_RESOURCE_TYPE,
     ATTR_SESSION_ID,
     ATTR_SESSION_KEY,
+    ATTR_TARGET_ID,
     ATTR_TOOL,
     ATTR_ACTION,
     ATTR_ARGS,
@@ -58,6 +60,7 @@ from .const import (
     CONF_VERIFY_SSL,
     CONF_CONTEXT_MAX_CHARS,
     CONF_CONTEXT_STRATEGY,
+    CONF_ENABLE_NATIVE_HA_TOOLS,
     CONF_ENABLE_TOOL_CALLS,
     CONF_INCLUDE_EXPOSED_CONTEXT,
     CONF_WAKE_WORD,
@@ -71,6 +74,7 @@ from .const import (
     DEFAULT_VOICE_AGENT_ID,
     DEFAULT_CONTEXT_MAX_CHARS,
     DEFAULT_CONTEXT_STRATEGY,
+    DEFAULT_ENABLE_NATIVE_HA_TOOLS,
     DEFAULT_ENABLE_TOOL_CALLS,
     DEFAULT_INCLUDE_EXPOSED_CONTEXT,
     DEFAULT_WAKE_WORD,
@@ -90,6 +94,12 @@ from .const import (
 )
 from .coordinator import OpenClawCoordinator
 from .exposure import apply_context_policy, build_exposed_entities_context
+from .native_tools import (
+    ToolExecutionResult,
+    async_execute_tool_calls,
+    build_capabilities_payload,
+    build_capabilities_prompt,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -429,23 +439,11 @@ def _async_register_services(hass: HomeAssistant) -> None:
             resolved_agent_id = voice_agent_id
 
         try:
-            include_context = options.get(
-                CONF_INCLUDE_EXPOSED_CONTEXT,
-                DEFAULT_INCLUDE_EXPOSED_CONTEXT,
+            system_prompt = _build_system_prompt(
+                hass,
+                options,
+                assistant="conversation",
             )
-            max_chars = int(
-                options.get(CONF_CONTEXT_MAX_CHARS, DEFAULT_CONTEXT_MAX_CHARS)
-            )
-            strategy = options.get(CONF_CONTEXT_STRATEGY, DEFAULT_CONTEXT_STRATEGY)
-            if strategy not in {"clear", CONTEXT_STRATEGY_TRUNCATE}:
-                strategy = DEFAULT_CONTEXT_STRATEGY
-
-            raw_context = (
-                build_exposed_entities_context(hass, assistant="conversation")
-                if include_context
-                else None
-            )
-            system_prompt = apply_context_policy(raw_context, max_chars, strategy)
 
             _append_chat_history(hass, session_id, "user", message)
 
@@ -457,20 +455,39 @@ def _async_register_services(hass: HomeAssistant) -> None:
                 extra_headers=extra_headers,
             )
 
-            if options.get(CONF_ENABLE_TOOL_CALLS, DEFAULT_ENABLE_TOOL_CALLS):
-                tool_results = await _async_execute_tool_calls(hass, response)
-                if tool_results:
-                    response = await client.async_send_message(
-                        message=(
-                            "Tool execution results:\n"
-                            + "\n".join(f"- {line}" for line in tool_results)
-                            + "\nRespond to the user based on these results."
-                        ),
-                        session_id=session_id,
-                        system_prompt=system_prompt,
-                        agent_id=resolved_agent_id,
-                        extra_headers=extra_headers,
-                    )
+            tool_results = await async_execute_tool_calls(
+                hass,
+                response,
+                service_tools_enabled=options.get(
+                    CONF_ENABLE_TOOL_CALLS,
+                    DEFAULT_ENABLE_TOOL_CALLS,
+                ),
+                native_tools_enabled=options.get(
+                    CONF_ENABLE_NATIVE_HA_TOOLS,
+                    DEFAULT_ENABLE_NATIVE_HA_TOOLS,
+                ),
+                record_execution=lambda result: _record_tool_execution(
+                    hass,
+                    coordinator,
+                    result,
+                ),
+            )
+            if tool_results:
+                response = await client.async_send_message(
+                    message=(
+                        "Tool execution results:\n"
+                        + json.dumps(
+                            [item.to_follow_up_summary() for item in tool_results],
+                            ensure_ascii=False,
+                            indent=2,
+                        )
+                        + "\nRespond to the user based on these results."
+                    ),
+                    session_id=session_id,
+                    system_prompt=system_prompt,
+                    agent_id=resolved_agent_id,
+                    extra_headers=extra_headers,
+                )
 
             assistant_message = _extract_assistant_message(response)
             model_used = response.get("model", "unknown")
@@ -559,27 +576,24 @@ def _async_register_services(hass: HomeAssistant) -> None:
             error_message = str(err)
 
         duration_ms = int((perf_counter() - started) * 1000)
-        result_preview = _summarize_tool_result(result)
-        coordinator.record_tool_invocation(
-            tool_name=tool_name,
-            ok=ok,
-            duration_ms=duration_ms,
-            error_message=error_message,
-            result_preview=result_preview,
+        _record_tool_execution(
+            hass,
+            coordinator,
+            ToolExecutionResult(
+                tool_name=tool_name,
+                action=action,
+                ok=ok,
+                result=result,
+                error=error_message,
+                duration_ms=duration_ms,
+                resource_type="gateway_tool",
+                target_id=session_key,
+            ),
+            extra_event_data={
+                ATTR_SESSION_KEY: session_key,
+                ATTR_DRY_RUN: dry_run,
+            },
         )
-
-        event_payload = {
-            ATTR_TOOL: tool_name,
-            ATTR_ACTION: action,
-            ATTR_SESSION_KEY: session_key,
-            ATTR_DRY_RUN: dry_run,
-            ATTR_OK: ok,
-            ATTR_RESULT: result,
-            ATTR_ERROR: error_message,
-            ATTR_DURATION_MS: duration_ms,
-            ATTR_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
-        }
-        hass.bus.async_fire(EVENT_TOOL_INVOKED, event_payload)
 
         if not ok:
             raise OpenClawApiError(error_message or "Tool invocation failed")
@@ -635,6 +649,84 @@ def _get_entry_options(hass: HomeAssistant, entry_data: dict[str, Any]) -> dict[
     return latest_entry.options if latest_entry else {}
 
 
+def _build_system_prompt(
+    hass: HomeAssistant,
+    options: dict[str, Any],
+    *,
+    assistant: str,
+    extra_prompt: str | None = None,
+) -> str | None:
+    """Build the combined system prompt for OpenClaw requests."""
+    include_context = options.get(
+        CONF_INCLUDE_EXPOSED_CONTEXT,
+        DEFAULT_INCLUDE_EXPOSED_CONTEXT,
+    )
+    max_chars = int(options.get(CONF_CONTEXT_MAX_CHARS, DEFAULT_CONTEXT_MAX_CHARS))
+    strategy = options.get(CONF_CONTEXT_STRATEGY, DEFAULT_CONTEXT_STRATEGY)
+    if strategy not in {"clear", CONTEXT_STRATEGY_TRUNCATE}:
+        strategy = DEFAULT_CONTEXT_STRATEGY
+
+    prompt_parts: list[str] = []
+    if include_context:
+        raw_context = build_exposed_entities_context(hass, assistant=assistant)
+        context_block = apply_context_policy(raw_context, max_chars, strategy)
+        if context_block:
+            prompt_parts.append(context_block)
+
+    native_tools_enabled = options.get(
+        CONF_ENABLE_NATIVE_HA_TOOLS,
+        DEFAULT_ENABLE_NATIVE_HA_TOOLS,
+    )
+    native_capabilities = build_capabilities_prompt(
+        hass,
+        enabled=native_tools_enabled,
+    )
+    if native_capabilities:
+        prompt_parts.append(
+            apply_context_policy(native_capabilities, max_chars, strategy)
+            or native_capabilities
+        )
+
+    if extra_prompt:
+        prompt_parts.append(extra_prompt)
+
+    return "\n\n".join(part for part in prompt_parts if part) or None
+
+
+def _record_tool_execution(
+    hass: HomeAssistant,
+    coordinator: OpenClawCoordinator,
+    result: ToolExecutionResult,
+    *,
+    extra_event_data: dict[str, Any] | None = None,
+) -> None:
+    """Emit telemetry for a tool execution result."""
+    coordinator.record_tool_invocation(
+        tool_name=result.tool_name,
+        ok=result.ok,
+        duration_ms=result.duration_ms,
+        error_message=result.error,
+        result_preview=result.result_preview(),
+        resource_type=result.resource_type,
+        action=result.action,
+        target_id=result.target_id,
+    )
+    event_payload = {
+        ATTR_TOOL: result.tool_name,
+        ATTR_ACTION: result.action,
+        ATTR_RESOURCE_TYPE: result.resource_type,
+        ATTR_TARGET_ID: result.target_id,
+        ATTR_OK: result.ok,
+        ATTR_RESULT: result.result,
+        ATTR_ERROR: result.error,
+        ATTR_DURATION_MS: result.duration_ms,
+        ATTR_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+    }
+    if extra_event_data:
+        event_payload.update(extra_event_data)
+    hass.bus.async_fire(EVENT_TOOL_INVOKED, event_payload)
+
+
 def _extract_text_recursive(value: Any, depth: int = 0) -> str | None:
     """Recursively extract assistant text from nested response payloads."""
     if depth > 8:
@@ -682,112 +774,9 @@ def _extract_text_recursive(value: Any, depth: int = 0) -> str | None:
     return None
 
 
-def _summarize_tool_result(value: Any, max_len: int = 240) -> str | None:
-    """Return compact string preview of tool result payload."""
-    if value is None:
-        return None
-    if isinstance(value, str):
-        text = value.strip()
-    else:
-        try:
-            text = json.dumps(value, ensure_ascii=False)
-        except (TypeError, ValueError):
-            text = str(value)
-    text = text.strip()
-    if not text:
-        return None
-    if len(text) > max_len:
-        return f"{text[:max_len]}…"
-    return text
-
-
 def _extract_assistant_message(response: dict[str, Any]) -> str | None:
     """Extract assistant text from modern/legacy OpenAI-compatible responses."""
     return _extract_text_recursive(response)
-
-
-def _extract_tool_calls(response: dict[str, Any]) -> list[dict[str, Any]]:
-    """Extract OpenAI-style tool calls from a response payload."""
-    choices = response.get("choices")
-    if not isinstance(choices, list) or not choices:
-        return []
-
-    message = choices[0].get("message") if isinstance(choices[0], dict) else None
-    if not isinstance(message, dict):
-        return []
-
-    tool_calls = message.get("tool_calls")
-    if not isinstance(tool_calls, list):
-        return []
-
-    valid_calls: list[dict[str, Any]] = []
-    for call in tool_calls:
-        if isinstance(call, dict):
-            valid_calls.append(call)
-    return valid_calls
-
-
-async def _async_execute_tool_calls(
-    hass: HomeAssistant,
-    response: dict[str, Any],
-) -> list[str]:
-    """Execute supported tool calls and return result lines."""
-    results: list[str] = []
-    tool_calls = _extract_tool_calls(response)
-
-    for call in tool_calls:
-        function_data = call.get("function")
-        if not isinstance(function_data, dict):
-            continue
-
-        function_name = function_data.get("name")
-        arguments = function_data.get("arguments")
-
-        if function_name not in {"execute_service", "execute_services"}:
-            results.append(f"Skipped unsupported tool '{function_name}'")
-            continue
-
-        if not isinstance(arguments, str):
-            results.append("Skipped tool call with invalid arguments format")
-            continue
-
-        try:
-            parsed = json.loads(arguments)
-        except json.JSONDecodeError:
-            results.append("Skipped tool call due to invalid JSON arguments")
-            continue
-
-        services_list = parsed.get("list") if isinstance(parsed, dict) else None
-        if not isinstance(services_list, list):
-            results.append("Skipped tool call without 'list' payload")
-            continue
-
-        for item in services_list:
-            if not isinstance(item, dict):
-                continue
-            domain = item.get("domain")
-            service = item.get("service")
-            service_data = item.get("service_data", {})
-
-            if not isinstance(domain, str) or not isinstance(service, str):
-                results.append("Skipped invalid service item (missing domain/service)")
-                continue
-
-            if not isinstance(service_data, dict):
-                service_data = {}
-
-            try:
-                await hass.services.async_call(
-                    domain,
-                    service,
-                    service_data,
-                    blocking=True,
-                )
-                results.append(f"Executed {domain}.{service}")
-            except Exception as err:  # noqa: BLE001
-                results.append(f"Failed {domain}.{service}: {err}")
-
-    return results
 
 
 def _get_chat_history_store(hass: HomeAssistant) -> dict[str, list[dict[str, str]]]:
@@ -885,3 +874,28 @@ def _async_register_websocket_api(hass: HomeAssistant) -> None:
         )
 
     websocket_api.async_register_command(hass, websocket_get_settings)
+
+    @websocket_api.websocket_command(
+        {
+            vol.Required("type"): f"{DOMAIN}/get_capabilities",
+        }
+    )
+    @callback
+    def websocket_get_capabilities(
+        hass: HomeAssistant,
+        connection: websocket_api.ActiveConnection,
+        msg: dict[str, Any],
+    ) -> None:
+        """Return native HA management capabilities and summary inventory."""
+        entry_data = _get_first_entry_data(hass)
+        options = _get_entry_options(hass, entry_data) if entry_data else {}
+        payload = build_capabilities_payload(
+            hass,
+            enabled=options.get(
+                CONF_ENABLE_NATIVE_HA_TOOLS,
+                DEFAULT_ENABLE_NATIVE_HA_TOOLS,
+            ),
+        )
+        connection.send_result(msg["id"], payload)
+
+    websocket_api.async_register_command(hass, websocket_get_capabilities)

@@ -2,6 +2,19 @@
 
 All notable changes to the OpenClaw Home Assistant Integration will be documented in this file.
 
+## [0.2.0] - 2026-03-09
+
+### Added
+- Added a native Home Assistant tool router for OpenClaw model tool calls, including `ha_inventory_query`, `ha_automation_manage`, `ha_scene_manage`, `ha_script_manage`, and `ha_blueprint_manage`.
+- Added native capability discovery with websocket endpoint `openclaw/get_capabilities` and prompt-side capability manifest injection for supported Home Assistant resources.
+- Added direct file-backed CRUD support for Home Assistant managed automations, scenes, scripts, and blueprints, plus automation enable/disable support.
+- Added richer `openclaw_tool_invoked` telemetry metadata with `action`, `resource_type`, and `target_id`, and exposed the same metadata through last-tool sensor attributes.
+- Added an opt-in integration option for native Home Assistant management tools so existing installs do not silently gain write capabilities.
+
+### Changed
+- Tool execution follow-up messages sent back to OpenClaw now use structured result summaries instead of plain text status lines.
+- `openclaw.send_message` and the native Assist conversation agent now advertise native Home Assistant capabilities when that option is enabled.
+
 ## [0.1.61] - 2026-03-07
 
 ### Added

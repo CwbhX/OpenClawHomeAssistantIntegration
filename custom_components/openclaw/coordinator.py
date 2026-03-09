@@ -23,8 +23,11 @@ from .const import (
     DATA_LAST_TOOL_ERROR,
     DATA_LAST_TOOL_INVOKED_AT,
     DATA_LAST_TOOL_NAME,
+    DATA_LAST_TOOL_RESOURCE_TYPE,
     DATA_LAST_TOOL_RESULT_PREVIEW,
     DATA_LAST_TOOL_STATUS,
+    DATA_LAST_TOOL_ACTION,
+    DATA_LAST_TOOL_TARGET_ID,
     DATA_LAST_ACTIVITY,
     DATA_MODEL,
     DATA_PROVIDER,
@@ -75,6 +78,9 @@ class OpenClawCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             DATA_LAST_TOOL_INVOKED_AT: None,
             DATA_LAST_TOOL_ERROR: None,
             DATA_LAST_TOOL_RESULT_PREVIEW: None,
+            DATA_LAST_TOOL_RESOURCE_TYPE: None,
+            DATA_LAST_TOOL_ACTION: None,
+            DATA_LAST_TOOL_TARGET_ID: None,
         }
 
     def _offline_data(self) -> dict[str, Any]:
@@ -96,6 +102,9 @@ class OpenClawCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             DATA_LAST_TOOL_INVOKED_AT: self._last_tool_state.get(DATA_LAST_TOOL_INVOKED_AT),
             DATA_LAST_TOOL_ERROR: self._last_tool_state.get(DATA_LAST_TOOL_ERROR),
             DATA_LAST_TOOL_RESULT_PREVIEW: self._last_tool_state.get(DATA_LAST_TOOL_RESULT_PREVIEW),
+            DATA_LAST_TOOL_RESOURCE_TYPE: self._last_tool_state.get(DATA_LAST_TOOL_RESOURCE_TYPE),
+            DATA_LAST_TOOL_ACTION: self._last_tool_state.get(DATA_LAST_TOOL_ACTION),
+            DATA_LAST_TOOL_TARGET_ID: self._last_tool_state.get(DATA_LAST_TOOL_TARGET_ID),
         }
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -216,6 +225,9 @@ class OpenClawCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         duration_ms: int,
         error_message: str | None = None,
         result_preview: str | None = None,
+        resource_type: str | None = None,
+        action: str | None = None,
+        target_id: str | None = None,
     ) -> None:
         """Store latest tool invocation metadata and update entities immediately."""
         self._last_tool_state = {
@@ -225,6 +237,9 @@ class OpenClawCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             DATA_LAST_TOOL_INVOKED_AT: datetime.now(timezone.utc),
             DATA_LAST_TOOL_ERROR: error_message,
             DATA_LAST_TOOL_RESULT_PREVIEW: result_preview,
+            DATA_LAST_TOOL_RESOURCE_TYPE: resource_type,
+            DATA_LAST_TOOL_ACTION: action,
+            DATA_LAST_TOOL_TARGET_ID: target_id,
         }
         current = dict(self.data or self._offline_data())
         current.update(self._last_tool_state)

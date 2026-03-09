@@ -47,6 +47,7 @@
           "context_max_chars": "Max context characters",
           "context_strategy": "When context exceeds max",
           "enable_tool_calls": "Enable tool calls (execute services)",
+          "enable_native_ha_tools": "Enable native Home Assistant management tools",
           "wake_word_enabled": "Require wake word",
           "wake_word": "Wake word",
           "allow_brave_webspeech": "Allow Web Speech in Brave (experimental)",

@@ -1,6 +1,9 @@
 send_message:
   name: Send Message
-  description: Send a text message to OpenClaw and get a response.
+  description: >
+    Send a text message to OpenClaw and get a response. When native Home
+    Assistant management tools are enabled, model tool calls can also inspect
+    and manage Home Assistant automations, scenes, scripts, and blueprints.
   fields:
     message:
       name: Message
@@ -47,7 +50,10 @@ clear_history:
 
 invoke_tool:
   name: Invoke Tool
-  description: Invoke a single OpenClaw Gateway tool via /tools/invoke.
+  description: >
+    Invoke a single OpenClaw Gateway tool via /tools/invoke. This service is
+    for gateway tools only; native Home Assistant management happens through
+    model-emitted tool calls on the chat/conversation paths.
   fields:
     tool:
       name: Tool

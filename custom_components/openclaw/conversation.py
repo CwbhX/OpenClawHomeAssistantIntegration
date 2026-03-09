@@ -25,11 +25,13 @@ from .const import (
     CONF_ASSIST_SESSION_ID,
     CONF_CONTEXT_MAX_CHARS,
     CONF_CONTEXT_STRATEGY,
+    CONF_ENABLE_NATIVE_HA_TOOLS,
     CONF_INCLUDE_EXPOSED_CONTEXT,
     CONF_VOICE_AGENT_ID,
     DEFAULT_ASSIST_SESSION_ID,
     DEFAULT_CONTEXT_MAX_CHARS,
     DEFAULT_CONTEXT_STRATEGY,
+    DEFAULT_ENABLE_NATIVE_HA_TOOLS,
     DEFAULT_INCLUDE_EXPOSED_CONTEXT,
     DATA_MODEL,
     DOMAIN,
@@ -37,6 +39,7 @@ from .const import (
 )
 from .coordinator import OpenClawCoordinator
 from .exposure import apply_context_policy, build_exposed_entities_context
+from .native_tools import build_capabilities_prompt
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,9 +140,21 @@ class OpenClawConversationAgent(conversation.AbstractConversationAgent):
             else None
         )
         exposed_context = apply_context_policy(raw_context, max_chars, strategy)
+        native_capabilities = build_capabilities_prompt(
+            self.hass,
+            enabled=options.get(
+                CONF_ENABLE_NATIVE_HA_TOOLS,
+                DEFAULT_ENABLE_NATIVE_HA_TOOLS,
+            ),
+        )
+        native_capabilities = apply_context_policy(
+            native_capabilities,
+            max_chars,
+            strategy,
+        )
         extra_system_prompt = getattr(user_input, "extra_system_prompt", None)
         system_prompt = "\n\n".join(
-            part for part in (exposed_context, extra_system_prompt) if part
+            part for part in (exposed_context, native_capabilities, extra_system_prompt) if part
         ) or None
 
         try:

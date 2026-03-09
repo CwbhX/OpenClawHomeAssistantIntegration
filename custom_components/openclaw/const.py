@@ -32,6 +32,7 @@ CONF_INCLUDE_EXPOSED_CONTEXT = "include_exposed_context"
 CONF_CONTEXT_MAX_CHARS = "context_max_chars"
 CONF_CONTEXT_STRATEGY = "context_strategy"
 CONF_ENABLE_TOOL_CALLS = "enable_tool_calls"
+CONF_ENABLE_NATIVE_HA_TOOLS = "enable_native_ha_tools"
 CONF_WAKE_WORD_ENABLED = "wake_word_enabled"
 CONF_WAKE_WORD = "wake_word"
 CONF_ALLOW_BRAVE_WEBSPEECH = "allow_brave_webspeech"
@@ -46,6 +47,7 @@ DEFAULT_INCLUDE_EXPOSED_CONTEXT = True
 DEFAULT_CONTEXT_MAX_CHARS = 13000
 DEFAULT_CONTEXT_STRATEGY = "truncate"
 DEFAULT_ENABLE_TOOL_CALLS = False
+DEFAULT_ENABLE_NATIVE_HA_TOOLS = False
 DEFAULT_WAKE_WORD_ENABLED = False
 DEFAULT_WAKE_WORD = "hey openclaw"
 DEFAULT_ALLOW_BRAVE_WEBSPEECH = False
@@ -110,6 +112,9 @@ DATA_LAST_TOOL_DURATION_MS = "last_tool_duration_ms"
 DATA_LAST_TOOL_INVOKED_AT = "last_tool_invoked_at"
 DATA_LAST_TOOL_ERROR = "last_tool_error"
 DATA_LAST_TOOL_RESULT_PREVIEW = "last_tool_result_preview"
+DATA_LAST_TOOL_RESOURCE_TYPE = "last_tool_resource_type"
+DATA_LAST_TOOL_ACTION = "last_tool_action"
+DATA_LAST_TOOL_TARGET_ID = "last_tool_target_id"
 
 # Platforms
 PLATFORMS = ["sensor", "binary_sensor", "conversation", "event", "button", "select"]
@@ -142,6 +147,8 @@ ATTR_OK = "ok"
 ATTR_RESULT = "result"
 ATTR_ERROR = "error"
 ATTR_DURATION_MS = "duration_ms"
+ATTR_RESOURCE_TYPE = "resource_type"
+ATTR_TARGET_ID = "target_id"
 
 # API endpoints
 # The OpenClaw gateway exposes only the OpenAI-compatible endpoints.

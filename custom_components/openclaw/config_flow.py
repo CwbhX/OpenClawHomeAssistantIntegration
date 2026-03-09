@@ -46,6 +46,7 @@ from .const import (
     CONF_CONTEXT_MAX_CHARS,
     CONF_CONTEXT_STRATEGY,
     CONF_ENABLE_TOOL_CALLS,
+    CONF_ENABLE_NATIVE_HA_TOOLS,
     CONF_INCLUDE_EXPOSED_CONTEXT,
     CONF_WAKE_WORD,
     CONF_WAKE_WORD_ENABLED,
@@ -64,6 +65,7 @@ from .const import (
     DEFAULT_CONTEXT_MAX_CHARS,
     DEFAULT_CONTEXT_STRATEGY,
     DEFAULT_ENABLE_TOOL_CALLS,
+    DEFAULT_ENABLE_NATIVE_HA_TOOLS,
     DEFAULT_INCLUDE_EXPOSED_CONTEXT,
     DEFAULT_WAKE_WORD,
     DEFAULT_WAKE_WORD_ENABLED,
@@ -510,6 +512,13 @@ class OpenClawOptionsFlow(OptionsFlowWithReload):
                 default=options.get(
                     CONF_ENABLE_TOOL_CALLS,
                     DEFAULT_ENABLE_TOOL_CALLS,
+                ),
+            ): bool,
+            vol.Optional(
+                CONF_ENABLE_NATIVE_HA_TOOLS,
+                default=options.get(
+                    CONF_ENABLE_NATIVE_HA_TOOLS,
+                    DEFAULT_ENABLE_NATIVE_HA_TOOLS,
                 ),
             ): bool,
             vol.Optional(

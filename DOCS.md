@@ -10,6 +10,7 @@ OpenClaw connects Home Assistant to your OpenClaw Gateway and gives you:
 - A built-in **chat card** for dashboards
 - **Voice input modes** (browser voice and Home Assistant STT)
 - **Automation services and events**
+- **Native Home Assistant discovery and authoring tools** for OpenClaw
 - **Status and telemetry sensors**
 
 ---
@@ -142,6 +143,11 @@ Path: **Settings → Devices & Services → OpenClaw → Configure**
 - **Enable tool calls (execute services)**
   - Allows supported tool-call responses to execute Home Assistant services.
   - Keep disabled if you prefer read-only assistant behavior.
+- **Enable native Home Assistant management tools**
+  - Injects a capability manifest into OpenClaw requests.
+  - Exposes native integration-owned tools for inventory and CRUD over automations, scenes, scripts, and blueprints.
+  - Also exposes automation enable/disable operations.
+  - This coexists with separate generic Home Assistant skills, but gives OpenClaw a richer managed surface with editability/source metadata.
 
 ### Voice options
 - **Wake word enabled**
@@ -173,6 +179,8 @@ If responses are unexpected:
 
 ## `openclaw.send_message`
 Use this to send text to OpenClaw from scripts/automations.
+
+If native Home Assistant management tools are enabled, OpenClaw can also inspect and manage supported Home Assistant resources during the conversation.
 
 Use cases:
 - Trigger assistant checks on schedule
@@ -217,6 +225,8 @@ mode: single
 
 ## `openclaw.invoke_tool`
 Directly invokes one OpenClaw gateway tool through `/tools/invoke`.
+
+This service is only for gateway tools. Native Home Assistant authoring and inventory operations happen through model-emitted tool calls on the send-message and Assist conversation paths.
 
 Typical fields in UI:
 - Tool name
@@ -277,12 +287,17 @@ mode: queued
 ```
 
 ## `openclaw_tool_invoked`
-Fires after `openclaw.invoke_tool` completes.
+Fires after `openclaw.invoke_tool` completes, and also after native Home Assistant tool executions triggered by OpenClaw.
 
 Includes success/failure metadata and timing info, useful for:
 - Alerting on failed tool runs
 - Telemetry dashboards
 - Automation branching based on `ok/error`
+
+Additional metadata now includes:
+- `action`
+- `resource_type`
+- `target_id`
 
 Automation example (alert on tool failure):
 
@@ -321,6 +336,8 @@ mode: queued
 - **Last Tool Status**
 - **Last Tool Duration**
 - **Last Tool Invoked**
+
+Tool telemetry attributes also include the latest `resource_type`, `action`, and `target_id` when available.
 
 ### Why some sensors may show `Unknown`
 - `Last Tool*` sensors remain `Unknown` until at least one tool invocation completes.

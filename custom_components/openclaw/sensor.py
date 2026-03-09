@@ -21,8 +21,11 @@ from .const import (
     DATA_LAST_TOOL_ERROR,
     DATA_LAST_TOOL_INVOKED_AT,
     DATA_LAST_TOOL_NAME,
+    DATA_LAST_TOOL_RESOURCE_TYPE,
     DATA_LAST_TOOL_RESULT_PREVIEW,
     DATA_LAST_TOOL_STATUS,
+    DATA_LAST_TOOL_ACTION,
+    DATA_LAST_TOOL_TARGET_ID,
     DATA_LAST_ACTIVITY,
     DATA_MODEL,
     DATA_PROVIDER,
@@ -172,6 +175,9 @@ class OpenClawSensor(CoordinatorEntity[OpenClawCoordinator], SensorEntity):
                 "error": data.get(DATA_LAST_TOOL_ERROR),
                 "result_preview": data.get(DATA_LAST_TOOL_RESULT_PREVIEW),
                 "invoked_at": data.get(DATA_LAST_TOOL_INVOKED_AT),
+                "resource_type": data.get(DATA_LAST_TOOL_RESOURCE_TYPE),
+                "action": data.get(DATA_LAST_TOOL_ACTION),
+                "target_id": data.get(DATA_LAST_TOOL_TARGET_ID),
             }
 
         return None
