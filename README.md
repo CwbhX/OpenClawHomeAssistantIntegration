@@ -1,6 +1,6 @@
 # OpenClaw Integration for Home Assistant
 
-_If you want to install OpenClaw as an Add-On/App directly on your Home Assistant instance, take a look here:_ https://github.com/CwbhX/OpenClawHomeAssistant
+_If you want to install OpenClaw as an Add-On/App directly on your Home Assistant instance, see the original maintainer @techartdev here:_ https://github.com/techartdev/OpenClawHomeAssistant
 
 
 OpenClaw is a Home Assistant custom integration that connects your HA instance to the OpenClaw assistant backend and provides:
